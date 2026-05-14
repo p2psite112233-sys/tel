@@ -160,7 +160,15 @@ async def amount(message: types.Message):
         except:
             pass
 
-    await message.answer("✅ Заявка создана")
+    await message.answer(
+    f"🎉 Заявка принята в обработку\n\n"
+    f"🆔 ID: #{order_id}\n"
+    f"💳 Услуга: Карта под оплату\n"
+    f"💰 Сумма: {rub:.2f} RUB\n\n"
+    f"📊 Статус: NEW\n"
+    f"👨‍💻 Исполнитель: назначается\n\n"
+    f"⏳ Ожидайте — мы уже взяли вашу заявку в работу и скоро свяжемся с вами"
+)
 
 # ===== TAKE ORDER =====
 @dp.callback_query(F.data.startswith("take_"))
