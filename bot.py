@@ -146,7 +146,7 @@ async def amount(message: types.Message):
     f"💎 Итог: {total:.2f} RUB\n"
     f"🔐 Резерв: {usdt} USDT\n\n"
     f"⏱ Время на принятие: 1500 сек"
-)
+
     )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
