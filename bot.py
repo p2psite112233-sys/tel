@@ -275,21 +275,25 @@ async def handle_code(message: types.Message):
     worker_id = message.from_user.id
 
     if worker_id not in pending_code:
-        return
+        return await message.answer("ℹ️ У тебя нет активного запроса кода")
 
     order_id = pending_code.pop(worker_id)
     code = message.text.strip()
+
+    await message.answer(f"📦 DEBUG: order_id = {order_id}")
 
     row = cur.execute(
         "SELECT user_id FROM orders WHERE id=?",
         (order_id,)
     ).fetchone()
 
-    if not row or row[0] is None:
-        await message.answer("❌ user_id не найден в базе")
-        return
+    if not row:
+        return await message.answer("❌ DEBUG: заказ не найден в базе")
 
     user_id = row[0]
+
+    if not user_id:
+        return await message.answer("❌ DEBUG: user_id пустой")
 
     try:
         await bot.send_message(
@@ -297,8 +301,7 @@ async def handle_code(message: types.Message):
             f"🔐 ВАШ КОД:\n\n{code}\n\n📥 Заявка #{order_id}"
         )
     except Exception as e:
-        await message.answer(f"❌ Ошибка отправки: {e}")
-        return
+        return await message.answer(f"❌ SEND ERROR: {e}")
 
     await message.answer("✅ Код отправлен клиенту")
     
