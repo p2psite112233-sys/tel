@@ -220,8 +220,6 @@ async def take(call: types.CallbackQuery):
     await call.answer("Взял в работу ❤️")
     await call.message.edit_text(call.message.text + "\n\n🟢 В РАБОТЕ")
 
-
-# ===== REQUEST CODE =====
 # ===== REQUEST CODE =====
 @dp.callback_query(F.data.startswith("request_code_"))
 async def request_code(call: types.CallbackQuery):
@@ -238,13 +236,45 @@ async def request_code(call: types.CallbackQuery):
 
     worker_id = row[0]
 
-    await bot.send_message(
-        worker_id,
-        f"🔑 Клиент запросил код\n\n"
-        f"📥 Заявка #{order_id}"
-    )
+    worker_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+    [
+        InlineKeyboardButton(
+            text="📤 Отправить код",
+            callback_data=f"send_code_{order_id}"
+        )
+    ]
+])
+
+await bot.send_message(
+    worker_id,
+    f"🔑 Клиент запросил код\n\n📥 Заявка #{order_id}",
+    reply_markup=worker_keyboard
+)
 
     await call.answer("Запрос отправлен 📩")
+    
+    # ===== SEND CODE =====
+@dp.callback_query(F.data.startswith("send_code_"))
+async def send_code(call: types.CallbackQuery):
+
+    order_id = int(call.data.split("_")[1])
+
+    row = cur.execute(
+        "SELECT user_id FROM orders WHERE id=?",
+        (order_id,)
+    ).fetchone()
+
+    if not row:
+        return await call.answer("❌ Заявка не найдена", show_alert=True)
+
+    user_id = row[0]
+
+    await bot.send_message(
+        user_id,
+        f"🔐 SEND CODE\n\n📥 Заявка #{order_id}"
+    )
+
+    await call.answer("Код отправлен 📤")
     
 # ===== MAIN =====
 async def main():
