@@ -116,7 +116,7 @@ async def new_order(message: types.Message):
 )
 
 # ===== AMOUNT (ВАЖНО: БЕЗ FILTERОВ) =====
-@dp.message()
+@dp.message(F.text)
 async def amount(message: types.Message):
 
     uid = message.from_user.id
@@ -263,45 +263,48 @@ async def send_code(call: types.CallbackQuery):
 
     order_id = int(call.data.split("_")[2])
 
+    # запоминаем заявку за воркером
     pending_code[call.from_user.id] = order_id
 
-    await call.message.answer("🔐 Введите код для клиента:")
+    # просим ввести код
+    await bot.send_message(
+        call.from_user.id,
+        "🔐 Введите код для клиента одним сообщением:"
+    )
+
     await call.answer()
     
     # ===== CODE HANDLER (ВОЗВРАТ КОДА КЛИЕНТУ) =====
-@dp.message()
+@dp.message(F.text & ~F.text.startswith("/"))
 async def handle_code(message: types.Message):
 
     worker_id = message.from_user.id
 
+    # если воркер не в режиме ввода кода — выходим
     if worker_id not in pending_code:
-        return await message.answer("ℹ️ У тебя нет активного запроса кода")
+        return
 
     order_id = pending_code.pop(worker_id)
     code = message.text.strip()
 
-    await message.answer(f"📦 DEBUG: order_id = {order_id}")
-
+    # ищем пользователя по заявке
     row = cur.execute(
         "SELECT user_id FROM orders WHERE id=?",
         (order_id,)
     ).fetchone()
 
-    if not row:
-        return await message.answer("❌ DEBUG: заказ не найден в базе")
+    if not row or not row[0]:
+        return await message.answer("❌ Ошибка: пользователь не найден")
 
     user_id = row[0]
-
-    if not user_id:
-        return await message.answer("❌ DEBUG: user_id пустой")
 
     try:
         await bot.send_message(
             user_id,
             f"🔐 ВАШ КОД:\n\n{code}\n\n📥 Заявка #{order_id}"
         )
-    except Exception as e:
-        return await message.answer(f"❌ SEND ERROR: {e}")
+    except:
+        return await message.answer("❌ Не удалось отправить код клиенту")
 
     await message.answer("✅ Код отправлен клиенту")
     
