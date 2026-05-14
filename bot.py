@@ -189,10 +189,16 @@ async def take(call: types.CallbackQuery):
     )
     conn.commit()
 
-user_id = cur.execute(
+row = cur.execute(
     "SELECT user_id FROM orders WHERE id=?",
     (order_id,)
-).fetchone()[0]
+).fetchone()
+
+if row is None:
+    await call.answer("❌ Заявка не найдена", show_alert=True)
+    return
+
+user_id = row[0]
 
 await bot.send_message(
     user_id,
