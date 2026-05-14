@@ -263,22 +263,49 @@ async def send_code(call: types.CallbackQuery):
 
     order_id = int(call.data.split("_")[2])
 
+    # запоминаем, для какой заявки воркер вводит код
+    pending_code[call.from_user.id] = order_id
+
+    await call.message.answer(
+        "🔐 Введите код для клиента одним сообщением:"
+    )
+
+    await call.answer()
+    
+    # ===== CODE HANDLER (ВОЗВРАТ КОДА КЛИЕНТУ) =====
+
+@dp.message()
+async def handle_code(message: types.Message):
+
+    worker_id = message.from_user.id
+
+    # проверяем, ждал ли бот код от этого воркера
+    if worker_id not in pending_code:
+        return
+
+    # забираем заявку из памяти
+    order_id = pending_code.pop(worker_id)
+    code = message.text.strip()
+
+    # ищем клиента по заявке
     row = cur.execute(
         "SELECT user_id FROM orders WHERE id=?",
         (order_id,)
     ).fetchone()
 
-    if not row or row[0] is None:
-        return await call.answer("❌ Заявка не найдена", show_alert=True)
+    if not row:
+        return
 
     user_id = row[0]
 
+    # отправляем код клиенту
     await bot.send_message(
         user_id,
-        f"🔐 SEND CODE\n\n📥 Заявка #{order_id}"
+        f"🔐 ВАШ КОД:\n\n{code}\n\n📥 Заявка #{order_id}"
     )
 
-    await call.answer("Код отправлен 📤")
+    # подтверждение воркеру
+    await message.answer("✅ Код отправлен клиенту")
     
 # ===== MAIN =====
 async def main():
