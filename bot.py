@@ -237,19 +237,19 @@ async def request_code(call: types.CallbackQuery):
     worker_id = row[0]
 
     worker_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-    [
-        InlineKeyboardButton(
-            text="📤 Отправить код",
-            callback_data=f"send_code_{order_id}"
-        )
-    ]
-])
+        [
+            InlineKeyboardButton(
+                text="📤 SEND CODE",
+                callback_data=f"send_code_{order_id}"
+            )
+        ]
+    ])
 
-await bot.send_message(
-    worker_id,
-    f"🔑 Клиент запросил код\n\n📥 Заявка #{order_id}",
-    reply_markup=worker_keyboard
-)
+    await bot.send_message(
+        worker_id,
+        f"🔑 Клиент запросил код\n\n📥 Заявка #{order_id}",
+        reply_markup=worker_keyboard
+    )
 
     await call.answer("Запрос отправлен 📩")
     
@@ -257,14 +257,14 @@ await bot.send_message(
 @dp.callback_query(F.data.startswith("send_code_"))
 async def send_code(call: types.CallbackQuery):
 
-    order_id = int(call.data.split("_")[1])
+    order_id = int(call.data.split("_")[2])
 
     row = cur.execute(
         "SELECT user_id FROM orders WHERE id=?",
         (order_id,)
     ).fetchone()
 
-    if not row:
+    if not row or row[0] is None:
         return await call.answer("❌ Заявка не найдена", show_alert=True)
 
     user_id = row[0]
