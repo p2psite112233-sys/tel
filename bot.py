@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS orders (
 """)
 conn.commit()
 
-# ===== RENDER FIX =====
+# ===== WEB (Render fix) =====
 async def handle(request):
     return web.Response(text="Bot is running")
 
@@ -41,7 +41,7 @@ async def run_web():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
 
-# ===== ROLES + WORKERS =====
+# ===== ROLES =====
 users_role = {}
 workers = set()
 
@@ -51,7 +51,7 @@ def set_role(user_id: int, role: str):
 def get_role(user_id: int):
     return users_role.get(user_id, "user")
 
-ADMIN_ID = 123456789  # твой ID
+ADMIN_ID = 123456789  # замени на свой ID
 
 # ===== MENU =====
 menu = ReplyKeyboardMarkup(
@@ -105,24 +105,29 @@ async def new_order(message: types.Message):
 
     await message.answer(
         "💳 Карта под оплату\n"
-        "Введите сумму в RUB, на которую нужна карта.\n"
-        "После подтверждения работник отправит реквизиты для оплаты.\n\n"
-        "💸 Сумма заявки: в рублях\n"
+        "Введите сумму в RUB\n"
         "Пример: 500"
     )
 
-# ===== AMOUNT =====
-@dp.message(F.text.isdigit())
+# ===== AMOUNT (ВАЖНО: БЕЗ FILTERОВ) =====
+@dp.message()
 async def amount(message: types.Message):
 
     uid = message.from_user.id
 
-    if uid not in waiting:
+    if not waiting.get(uid):
         return
 
-    waiting.pop(uid)
+    text = message.text.strip()
 
-    rub = float(message.text)
+    try:
+        rub = float(text)
+    except:
+        await message.answer("❌ Введите число, например 500")
+        return
+
+    waiting[uid] = False
+
     usdt = round(rub / 63.7, 2)
     total = round(rub * 1.2, 2)
 
@@ -134,7 +139,7 @@ async def amount(message: types.Message):
 
     order_id = cur.lastrowid
 
-    text = (
+    text_order = (
         f"📥 Доступна новая заявка #{order_id}\n"
         f"Метод: Карта под оплату\n"
         f"Сумма операции: {rub:.2f} руб.\n"
@@ -148,12 +153,14 @@ async def amount(message: types.Message):
         [InlineKeyboardButton(text="❤️ Взять в работу", callback_data=f"take_{order_id}")]
     ])
 
-    # 🔥 РАССЫЛКА ВСЕМ ВОРКЕРАМ
-    for worker_id in workers:
+    # рассылка воркерам
+    for w in workers:
         try:
-            await bot.send_message(worker_id, text, reply_markup=keyboard)
+            await bot.send_message(w, text_order, reply_markup=keyboard)
         except:
             pass
+
+    await message.answer("✅ Заявка создана")
 
 # ===== TAKE ORDER =====
 @dp.callback_query(F.data.startswith("take_"))
@@ -166,8 +173,10 @@ async def take(call: types.CallbackQuery):
 
     order_id = int(call.data.split("_")[1])
 
-    cur.execute("UPDATE orders SET status='IN_PROGRESS', worker_id=? WHERE id=?",
-                (call.from_user.id, order_id))
+    cur.execute(
+        "UPDATE orders SET status='IN_PROGRESS', worker_id=? WHERE id=?",
+        (call.from_user.id, order_id)
+    )
     conn.commit()
 
     await call.answer("Взял в работу ❤️")
