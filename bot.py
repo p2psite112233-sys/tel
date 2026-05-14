@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS orders (
 """)
 conn.commit()
 
-# ===== RENDER FIX (PORT) =====
+# ===== RENDER FIX =====
 async def handle(request):
     return web.Response(text="Bot is running")
 
@@ -41,8 +41,9 @@ async def run_web():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
 
-# ===== ROLES =====
+# ===== ROLES + WORKERS =====
 users_role = {}
+workers = set()
 
 def set_role(user_id: int, role: str):
     users_role[user_id] = role
@@ -50,7 +51,7 @@ def set_role(user_id: int, role: str):
 def get_role(user_id: int):
     return users_role.get(user_id, "user")
 
-ADMIN_ID = 8538723496 # <-- замени на свой ID
+ADMIN_ID = 123456789  # твой ID
 
 # ===== MENU =====
 menu = ReplyKeyboardMarkup(
@@ -78,12 +79,20 @@ async def set_worker(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    try:
-        user_id = int(message.text.split()[1])
-        set_role(user_id, "worker")
-        await message.answer("✅ Worker назначен")
-    except:
+    parts = message.text.split()
+
+    if len(parts) < 2:
         await message.answer("Формат: /setworker 123456789")
+        return
+
+    try:
+        user_id = int(parts[1])
+        workers.add(user_id)
+        set_role(user_id, "worker")
+
+        await message.answer(f"✅ Worker назначен: {user_id}")
+    except:
+        await message.answer("Ошибка ID")
 
 # ===== STATE =====
 waiting = {}
@@ -139,7 +148,12 @@ async def amount(message: types.Message):
         [InlineKeyboardButton(text="❤️ Взять в работу", callback_data=f"take_{order_id}")]
     ])
 
-    await message.answer(text, reply_markup=keyboard)
+    # 🔥 РАССЫЛКА ВСЕМ ВОРКЕРАМ
+    for worker_id in workers:
+        try:
+            await bot.send_message(worker_id, text, reply_markup=keyboard)
+        except:
+            pass
 
 # ===== TAKE ORDER =====
 @dp.callback_query(F.data.startswith("take_"))
@@ -150,8 +164,10 @@ async def take(call: types.CallbackQuery):
     if role not in ["worker", "admin"]:
         return await call.answer("Нет доступа", show_alert=True)
 
+    order_id = int(call.data.split("_")[1])
+
     cur.execute("UPDATE orders SET status='IN_PROGRESS', worker_id=? WHERE id=?",
-                (call.from_user.id, int(call.data.split("_")[1])))
+                (call.from_user.id, order_id))
     conn.commit()
 
     await call.answer("Взял в работу ❤️")
