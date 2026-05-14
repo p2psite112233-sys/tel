@@ -116,7 +116,7 @@ async def new_order(message: types.Message):
 )
 
 # ===== AMOUNT (ВАЖНО: БЕЗ FILTERОВ) =====
-@dp.message(F.text)
+@dp.message()
 async def amount(message: types.Message):
 
     uid = message.from_user.id
