@@ -116,7 +116,7 @@ async def new_order(message: types.Message):
 )
 
 # ===== AMOUNT (ВАЖНО: БЕЗ FILTERОВ) =====
-@dp.message(F.text)
+@dp.message()
 async def amount(message: types.Message):
 
     uid = message.from_user.id
@@ -275,7 +275,7 @@ async def send_code(call: types.CallbackQuery):
     await call.answer()
     
     # ===== CODE HANDLER (ВОЗВРАТ КОДА КЛИЕНТУ) =====
-@dp.message(F.text & ~F.text.startswith("/"))
+@dp.message()
 async def handle_code(message: types.Message):
 
     worker_id = message.from_user.id
