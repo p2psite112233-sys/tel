@@ -286,14 +286,19 @@ async def handle_code(message: types.Message):
     ).fetchone()
 
     if not row or row[0] is None:
+        await message.answer("❌ user_id не найден в базе")
         return
 
     user_id = row[0]
 
-    await bot.send_message(
-        user_id,
-        f"🔐 ВАШ КОД:\n\n{code}\n\n📥 Заявка #{order_id}"
-    )
+    try:
+        await bot.send_message(
+            user_id,
+            f"🔐 ВАШ КОД:\n\n{code}\n\n📥 Заявка #{order_id}"
+        )
+    except Exception as e:
+        await message.answer(f"❌ Ошибка отправки: {e}")
+        return
 
     await message.answer("✅ Код отправлен клиенту")
     
