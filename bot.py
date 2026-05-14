@@ -104,10 +104,12 @@ async def new_order(message: types.Message):
     waiting[message.from_user.id] = True
 
     await message.answer(
-        "💳 Карта под оплату\n"
-        "Введите сумму в RUB\n"
-        "Пример: 500"
-    )
+    "💳 Карта под оплату\n\n"
+    "Введите сумму в RUB, на которую нужна карта.\n"
+    "После подтверждения работник отправит реквизиты для оплаты.\n\n"
+    "💸 Сумма заявки: в рублях\n"
+    "Пример: 500"
+)
 
 # ===== AMOUNT (ВАЖНО: БЕЗ FILTERОВ) =====
 @dp.message()
@@ -140,7 +142,7 @@ async def amount(message: types.Message):
     order_id = cur.lastrowid
 
     text_order = (
-    f"📥 <b>Новая заявка #{order_id}</b>\n\n"
+    f"📥 Новая заявка #{order_id}\n\n"
     f"💳 Метод: Карта под оплату\n"
     f"💰 Сумма: {rub:.2f} RUB\n"
     f"💎 Итог: {total:.2f} RUB\n"
