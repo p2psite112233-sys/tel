@@ -51,7 +51,7 @@ def set_role(user_id: int, role: str):
 def get_role(user_id: int):
     return users_role.get(user_id, "user")
 
-ADMIN_ID = 123456789  # замени на свой ID
+ADMIN_ID = 8538723496
 
 # ===== MENU =====
 menu = ReplyKeyboardMarkup(
