@@ -140,13 +140,13 @@ async def amount(message: types.Message):
     order_id = cur.lastrowid
 
     text_order = (
-        f"📥 Доступна новая заявка #{order_id}\n"
-        f"Метод: Карта под оплату\n"
-        f"Сумма операции: {rub:.2f} руб.\n"
-        f"💳 Можно выдать обычную карту\n"
-        f"Сумма заявки: {total:.2f} RUB\n"
-        f"Резерв клиента: {usdt} USDT\n"
-        f"⏱️ На принятие: 1500 сек"
+    f"📥 <b>Новая заявка #{order_id}</b>\n\n"
+    f"💳 Метод: Карта под оплату\n"
+    f"💰 Сумма: {rub:.2f} RUB\n"
+    f"💎 Итог: {total:.2f} RUB\n"
+    f"🔐 Резерв: {usdt} USDT\n\n"
+    f"⏱ Время на принятие: 1500 сек"
+)
     )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
