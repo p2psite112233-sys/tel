@@ -20,13 +20,12 @@ CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
     amount REAL,
-    status TEXT,
-    worker_id INTEGER
+    status TEXT
 )
 """)
 conn.commit()
 
-# ===== WEB SERVER (Render fix) =====
+# ===== FIX RENDER PORT =====
 async def handle(request):
     return web.Response(text="Bot is running")
 
@@ -57,40 +56,43 @@ async def start(message: types.Message):
 # ===== STATE =====
 waiting = {}
 
-# ===== NEW ORDER =====
+# ===== NEW ORDER TEXT =====
 @dp.message(F.text == "💳 Новая заявка")
 async def new_order(message: types.Message):
     waiting[message.from_user.id] = True
-    await message.answer("💳 Введите сумму в RUB")
+
+    await message.answer(
+        "💳 Карта под оплату\n"
+        "Введите сумму в RUB, на которую нужна карта.\n"
+        "После подтверждения работник отправит реквизиты для оплаты.\n\n"
+        "💸 Сумма заявки: в рублях\n"
+        "Пример: 500"
+    )
 
 # ===== AMOUNT =====
 @dp.message(F.text.isdigit())
-async def set_amount(message: types.Message):
+async def amount(message: types.Message):
 
     uid = message.from_user.id
 
     if uid not in waiting:
         return
 
-    amount = float(message.text)
     waiting.pop(uid)
 
     cur.execute(
-        "INSERT INTO orders (user_id, amount, status, worker_id) VALUES (?, ?, ?, ?)",
-        (uid, amount, "NEW", None)
+        "INSERT INTO orders (user_id, amount, status) VALUES (?, ?, ?)",
+        (uid, float(message.text), "NEW")
     )
     conn.commit()
 
     order_id = cur.lastrowid
 
     text = f"""
-📥 Доступна новая заявка #{order_id}
+📥 Доступна заявка #{order_id}
 Метод: Карта под оплату
-Сумма операции: {amount:.2f} руб.
-💳 Можно выдать обычную карту
-Сумма заявки: {amount:.2f} RUB
-Резерв клиента: {round(amount / 63.7, 2)} USDT
-⏱️ На принятие: 1500 сек
+Сумма операции: {message.text} руб.
+Статус: NEW
 """
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -101,25 +103,7 @@ async def set_amount(message: types.Message):
 
 # ===== TAKE ORDER =====
 @dp.callback_query(F.data.startswith("take_"))
-async def take_order(call: types.CallbackQuery):
-
-    order_id = int(call.data.split("_")[1])
-
-    cur.execute("SELECT status FROM orders WHERE id=?", (order_id,))
-    order = cur.fetchone()
-
-    if not order:
-        return await call.answer("Не найдено", show_alert=True)
-
-    if order[0] != "NEW":
-        return await call.answer("Уже взято", show_alert=True)
-
-    cur.execute("""
-        UPDATE orders
-        SET status='IN_PROGRESS', worker_id=?
-        WHERE id=?
-    """, (call.from_user.id, order_id))
-    conn.commit()
+async def take(call: types.CallbackQuery):
 
     await call.answer("Взял в работу ❤️")
     await call.message.edit_text(call.message.text + "\n\n🟢 В РАБОТЕ")
