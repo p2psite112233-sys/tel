@@ -112,7 +112,7 @@ async def new_order(message: types.Message):
 )
 
 # ===== AMOUNT (ВАЖНО: БЕЗ FILTERОВ) =====
-@dp.message()
+@dp.message(F.text)
 async def amount(message: types.Message):
 
     uid = message.from_user.id
@@ -222,29 +222,29 @@ async def take(call: types.CallbackQuery):
 
 
 # ===== REQUEST CODE =====
+# ===== REQUEST CODE =====
 @dp.callback_query(F.data.startswith("request_code_"))
 async def request_code(call: types.CallbackQuery):
 
-    print("REQUEST WORKS")  # <-- тест
-
-    order_id = int(call.data.split("_")[1])
+    order_id = int(call.data.split("_")[2])
 
     row = cur.execute(
         "SELECT worker_id FROM orders WHERE id=?",
         (order_id,)
     ).fetchone()
 
-    if not row:
+    if not row or row[0] is None:
         return await call.answer("❌ Нет исполнителя", show_alert=True)
 
     worker_id = row[0]
 
     await bot.send_message(
         worker_id,
-        f"🔑 Запрос кода\n📥 Заявка #{order_id}"
+        f"🔑 Клиент запросил код\n\n"
+        f"📥 Заявка #{order_id}"
     )
 
-    await call.answer("OK")
+    await call.answer("Запрос отправлен 📩")
     
 # ===== MAIN =====
 async def main():
