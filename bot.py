@@ -200,6 +200,15 @@ async def take(call: types.CallbackQuery):
 
     user_id = row[0]
 
+client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+    [
+        InlineKeyboardButton(
+            text="🔑 Запросить код",
+            callback_data=f"request_code_{order_id}"
+        )
+    ]
+])
+
     await bot.send_message(
         user_id,
         f"🟢 Ваша заявка #{order_id} принята в работу\n\n"
