@@ -225,6 +225,8 @@ async def take(call: types.CallbackQuery):
 @dp.callback_query(F.data.startswith("request_code_"))
 async def request_code(call: types.CallbackQuery):
 
+    print("REQUEST WORKS")  # <-- тест
+
     order_id = int(call.data.split("_")[1])
 
     row = cur.execute(
@@ -232,18 +234,17 @@ async def request_code(call: types.CallbackQuery):
         (order_id,)
     ).fetchone()
 
-    if not row or row[0] is None:
+    if not row:
         return await call.answer("❌ Нет исполнителя", show_alert=True)
 
     worker_id = row[0]
 
     await bot.send_message(
         worker_id,
-        f"🔑 Запрос кода от клиента\n\n"
-        f"📥 Заявка #{order_id}"
+        f"🔑 Запрос кода\n📥 Заявка #{order_id}"
     )
 
-    await call.answer("Запрос отправлен 📩")
+    await call.answer("OK")
     
 # ===== MAIN =====
 async def main():
