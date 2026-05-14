@@ -195,30 +195,31 @@ async def take(call: types.CallbackQuery):
     ).fetchone()
 
     if row is None:
-        await call.answer("❌ Заявка не найдена", show_alert=True)
-        return
+        return await call.answer("❌ Заявка не найдена", show_alert=True)
 
     user_id = row[0]
 
-client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
-    [
-        InlineKeyboardButton(
-            text="🔑 Запросить код",
-            callback_data=f"request_code_{order_id}"
-        )
-    ]
-])
+    # 👇 КНОПКИ (ВНУТРИ ФУНКЦИИ!)
+    client_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🔑 Запросить код",
+                callback_data=f"request_code_{order_id}"
+            )
+        ]
+    ])
 
     await bot.send_message(
         user_id,
         f"🟢 Ваша заявка #{order_id} принята в работу\n\n"
         f"👨‍💻 Исполнитель уже занимается вашим заказом\n"
-        f"⏳ Ожидайте завершения"
+        f"⏳ Ожидайте завершения",
+        reply_markup=client_keyboard
     )
 
     await call.answer("Взял в работу ❤️")
     await call.message.edit_text(call.message.text + "\n\n🟢 В РАБОТЕ")
-
+    
 # ===== MAIN =====
 async def main():
     await run_web()
