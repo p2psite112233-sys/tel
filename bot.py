@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS orders (
 """)
 conn.commit()
 
+
+# ===== GLOBAL STATE =====
+pending_code = {}   # 👈 СЮДА
+
 # ===== WEB (Render fix) =====
 async def handle(request):
     return web.Response(text="Bot is running")
