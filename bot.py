@@ -189,23 +189,23 @@ async def take(call: types.CallbackQuery):
     )
     conn.commit()
 
-row = cur.execute(
-    "SELECT user_id FROM orders WHERE id=?",
-    (order_id,)
-).fetchone()
+    row = cur.execute(
+        "SELECT user_id FROM orders WHERE id=?",
+        (order_id,)
+    ).fetchone()
 
-if row is None:
-    await call.answer("❌ Заявка не найдена", show_alert=True)
-    return
+    if row is None:
+        await call.answer("❌ Заявка не найдена", show_alert=True)
+        return
 
-user_id = row[0]
+    user_id = row[0]
 
-await bot.send_message(
-    user_id,
-    f"🟢 Ваша заявка #{order_id} принята в работу\n\n"
-    f"👨‍💻 Исполнитель уже занимается вашим заказом\n"
-    f"⏳ Ожидайте завершения"
-)
+    await bot.send_message(
+        user_id,
+        f"🟢 Ваша заявка #{order_id} принята в работу\n\n"
+        f"👨‍💻 Исполнитель уже занимается вашим заказом\n"
+        f"⏳ Ожидайте завершения"
+    )
 
     await call.answer("Взял в работу ❤️")
     await call.message.edit_text(call.message.text + "\n\n🟢 В РАБОТЕ")
