@@ -3,7 +3,7 @@ import os
 import sqlite3
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 # ===== BOT =====
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -26,9 +26,9 @@ CREATE TABLE IF NOT EXISTS orders (
 """)
 conn.commit()
 
-# ===== SIMPLE WEB SERVER (fix Render port issue) =====
+# ===== WEB SERVER (Render fix) =====
 async def handle(request):
-    return web.Response(text="Bot is alive")
+    return web.Response(text="Bot is running")
 
 async def run_web():
     app = web.Application()
@@ -41,31 +41,23 @@ async def run_web():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
 
-# ===== KEYBOARD =====
-def order_keyboard(order_id: int):
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="❤️ Взять в работу",
-                callback_data=f"take_{order_id}"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="⏪ Назад",
-                callback_data="back"
-            )
-        ]
-    ])
+# ===== MENU =====
+menu = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="💳 Новая заявка")]
+    ],
+    resize_keyboard=True
+)
 
 # ===== START =====
 @dp.message(F.text == "/start")
 async def start(message: types.Message):
-    await message.answer("🚀 Бот запущен")
+    await message.answer("бот запущен", reply_markup=menu)
 
-# ===== CREATE ORDER =====
+# ===== STATE =====
 waiting = {}
 
+# ===== NEW ORDER =====
 @dp.message(F.text == "💳 Новая заявка")
 async def new_order(message: types.Message):
     waiting[message.from_user.id] = True
@@ -101,9 +93,13 @@ async def set_amount(message: types.Message):
 ⏱️ На принятие: 1500 сек
 """
 
-    await message.answer(text, reply_markup=order_keyboard(order_id))
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❤️ Взять в работу", callback_data=f"take_{order_id}")]
+    ])
 
-# ===== TAKE ORDER SAFE =====
+    await message.answer(text, reply_markup=keyboard)
+
+# ===== TAKE ORDER =====
 @dp.callback_query(F.data.startswith("take_"))
 async def take_order(call: types.CallbackQuery):
 
@@ -126,18 +122,11 @@ async def take_order(call: types.CallbackQuery):
     conn.commit()
 
     await call.answer("Взял в работу ❤️")
-
     await call.message.edit_text(call.message.text + "\n\n🟢 В РАБОТЕ")
-
-# ===== BACK =====
-@dp.callback_query(F.data == "back")
-async def back(call: types.CallbackQuery):
-    await call.answer()
-    await call.message.edit_text("🔙 Назад")
 
 # ===== MAIN =====
 async def main():
-    await run_web()          # 👈 фикс Render
+    await run_web()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
